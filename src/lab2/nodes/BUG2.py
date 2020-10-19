@@ -230,7 +230,7 @@ def ransac_lines(points_list):
     all_line_points = []
     all_line_points_pair = []
     k = 50 # iterations 
-    d_thresh = 0.1 # Distance threshold
+    d_thresh = 0.2 # Distance threshold
     min_inliers = 2
     max_inliers = 0
     score_list = []
@@ -286,26 +286,47 @@ def laser_range_direction(laser_ranges):
 
 #################### Planning Part #########################
 
-def wall_follow(line_points):
+def wall_follow(line_points,laser_ranges):
     global robot_location, robot_rotation
+    left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
+    line_points = line_points[0]
     p1 = orthoProjection(line_points[0],line_points[1],robot_location)
     # p1 = line_points[0]
     p2 = line_points[1]
-    D_wall = 1  #14
-    wal_lead = 0  #2
+    D_wall = 15 #10
+    wal_lead = 3  #0.1
     angle_wall = math.atan2(p2[1]-D_wall,p2[0]+wal_lead-p1[0])
     linear, angular = vel_compute_withAngle(robot_rotation, angle_wall)
     move(linear, angular)
+    # if(left<2 or slight_left < 2 or slight_right<2 or right<2 or front<2):
+    #     move(linear, angular)
+    # else:
+    #     move(0.5,0)
 
-def wall_follow2(line_points,laser_ranges):
-    global robot_location, robot_rotation
+def wall_follow2(laser_ranges):
     left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
-    if(left<2):
-        linear, angular = 1, 0.8
-    if(right<2):
-        linear, angular = 1, -0.8
-    # linear, angular = vel_compute_withAngle(robot_rotation, angle_wall)
-    move(linear, angular)
+    d_arr = np.array([left,slight_left, front, right,slight_right])
+    d_thresh = 2.5
+    k = 2
+    print('Wall Distance -', d_thresh-np.min(d_arr))
+    t = abs(d_thresh-np.min(d_arr))*k
+    # print(d_arr)
+    if(left > d_thresh and right < left):
+        move(0.5,t)
+        print('  Turn Left')
+    elif(left<d_thresh and front > d_thresh):
+        move(1.5,0)
+        print('  Go Straight')
+    elif(left<d_thresh and front < d_thresh and right > left):
+        move(0.5,-t)
+        print('  Turn Right')
+    # elif(np.mean(d_arr)<d_thresh):
+    #     begin=rospy.Time.now()
+    #     while((rospy.Time.now()-begin) < rospy.Duration(0.5)):
+    #             move(1,-3.14)
+    #             print('  Right Cut')
+
+
 
 def go_to_goal(final_goal_location):
     global robot_location, robot_rotation
@@ -454,15 +475,15 @@ if __name__ == '__main__':
         # global laser_ranges, robot_location, robot_rotation, laser_intensities, final_goal_location, robot_start_location
         line_list = []
         sorted_lines = []
-        d_thresh = 1.5
+        d_thresh = 2
         Distance_goal = Distance_compute(final_goal_location,robot_location)
-        if(Distance_goal<3):
-            d_thresh = 1
+        if(Distance_goal<1):
+            d_thresh = 0.5
         # print('Goal Distance -',Distance_compute(final_goal_location,robot_location))
         # print('Goal Angle -',Heading_angle(final_goal_location,robot_location))
         left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
 
-        n_lines = 10
+        n_lines = 1
         if(np.mean(laser_ranges)<3):
             sorted_lines,line_list = get_sorted_lines(laser_ranges, n_lines)
 
@@ -474,10 +495,15 @@ if __name__ == '__main__':
             
         if(Distance_goal > 0.5):
             if(np.mean(laser_ranges)<d_thresh):
-                if(len(sorted_lines)>0):
+                # if(len(sorted_lines)>0):
+                #     print('Wall Follow')
+                #     # wall_follow(sorted_lines,laser_ranges)
+                if(left<d_thresh):
                     print('Wall Follow')
-                    wall_follow(sorted_lines[0])
-                    # wall_follow2(sorted_lines[0],laser_ranges)
+                    wall_follow2(laser_ranges)
+                else:
+                    print('Go to Goal')
+                    go_to_goal(final_goal_location)
             else:
                 if(isRobot_goal_line(robot_location)==False):
                     print('Go to Course Line')
