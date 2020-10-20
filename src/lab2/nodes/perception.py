@@ -258,7 +258,6 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
         global robot_location, robot_rotation
-        # obstacle_avoider(laser_ranges)
         if(np.mean(np.array(laser_ranges))<3):
             points_list = laser_to_points(laser_ranges)
             all_line_points_pair, score_list = ransac_lines(points_list)
@@ -270,8 +269,8 @@ if __name__ == '__main__':
                 line_list.append(points[0])
                 line_list.append(points[1])
             print('Lines - ',len(line_list)/2)
-
             lines_publisher(line_list)
+        obstacle_avoider(laser_ranges)
 
 
 

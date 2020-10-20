@@ -489,7 +489,7 @@ if __name__ == '__main__':
         # print('Goal Angle -',Heading_angle(final_goal_location,robot_location))
         left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
 
-        n_lines = 50
+        n_lines = 10
         if(np.mean(laser_ranges)<3):
             sorted_lines,line_list = get_sorted_lines(laser_ranges, n_lines)
         # print('Lines - ',len(line_list)/2)
