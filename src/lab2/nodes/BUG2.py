@@ -277,17 +277,19 @@ def get_sorted_lines(laser_ranges, n_lines):
     return sorted_lines,line_list
 
 def laser_range_direction(laser_ranges):
-    left  = np.min(laser_ranges[289:289+31]) # Mean range of left 120 values
-    slight_left  = np.min(laser_ranges[217:288-31]) # Mean range of left 120 values
-    front = np.min(laser_ranges[145:216-31]) # Mean range of front 120 values
-    slight_right = np.min(laser_ranges[73:144-31]) # Mean range of right 120 values
-    right = np.min(laser_ranges[0:60-31]) # Mean range of right 120 values
+    left  = np.mean(laser_ranges[289:289+31]) # Mean range of left 120 values
+    slight_left  = np.mean(laser_ranges[217:288-31]) # Mean range of left 120 values
+    front = np.mean(laser_ranges[145:216-31]) # Mean range of front 120 values
+    slight_right = np.mean(laser_ranges[73:144-31]) # Mean range of right 120 values
+    right = np.mean(laser_ranges[0:60-31]) # Mean range of right 120 values
+
+
+
     return left,slight_left,front,right,slight_right
 
 #################### Planning Part #########################
 
 def wall_follow(line_points,laser_ranges):
-    global robot_location, robot_rotation
     left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
     line_points = line_points[0]
     p1 = orthoProjection(line_points[0],line_points[1],robot_location)
@@ -298,35 +300,41 @@ def wall_follow(line_points,laser_ranges):
     angle_wall = math.atan2(p2[1]-D_wall,p2[0]+wal_lead-p1[0])
     linear, angular = vel_compute_withAngle(robot_rotation, angle_wall)
     move(linear, angular)
-    # if(left<2 or slight_left < 2 or slight_right<2 or right<2 or front<2):
-    #     move(linear, angular)
-    # else:
-    #     move(0.5,0)
 
 def wall_follow2(laser_ranges):
+    global Distance_goal, final_goal_location
     left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
     d_arr = np.array([left,slight_left, front, right,slight_right])
     d_thresh = 2.5
-    k = 2
+    k = 4
+    slack = 1.2
     print('Wall Distance -', d_thresh-np.min(d_arr))
-    t = abs(d_thresh-np.min(d_arr))*k
-    # print(d_arr)
-    if(left > d_thresh and right < left):
+    # t = abs(d_thresh-np.min(d_arr))*k
+    t = math.atan(d_thresh/front) - math.atan(np.min(d_arr)/front)
+
+    if(Distance_goal<1.8):
+        go_to_goal(final_goal_location)
+    elif(left<d_thresh and front >= d_thresh):
+        begin=rospy.Time.now()
+        while((rospy.Time.now()-begin) < rospy.Duration(slack)):       
+            move(0.5,-0.1)
+            print('Wall - Go Straight')
+
+    elif(left > d_thresh and slight_left < d_thresh and right < left):
+        t = abs(t)*k
         move(0.5,t)
-        print('  Turn Left')
-    elif(left<d_thresh and front > d_thresh):
-        move(1.5,0)
-        print('  Go Straight')
+        print('Wal - Turn Left')
     elif(left<d_thresh and front < d_thresh and right > left):
-        move(0.5,-t)
-        print('  Turn Right')
-    # elif(np.mean(d_arr)<d_thresh):
-    #     begin=rospy.Time.now()
-    #     while((rospy.Time.now()-begin) < rospy.Duration(0.5)):
-    #             move(1,-3.14)
-    #             print('  Right Cut')
-
-
+        t = abs(t)*k
+        move(0.5,-1.5*t)
+        print('Wall - Turn Right')
+    elif(slight_left < 0.8 and left > d_thresh):
+        move(0.5,-1.2)
+    elif(slight_right < d_thresh or slight_left < d_thresh or front < d_thresh):
+        if(slight_left > slight_right):
+            move(1,abs(slight_right-slight_left))
+        if(slight_left < slight_right):
+            move(1,-abs(slight_right-slight_left))
 
 def go_to_goal(final_goal_location):
     global robot_location, robot_rotation
@@ -472,33 +480,26 @@ if __name__ == '__main__':
 
 
     while not rospy.is_shutdown():
-        # global laser_ranges, robot_location, robot_rotation, laser_intensities, final_goal_location, robot_start_location
+
         line_list = []
         sorted_lines = []
-        d_thresh = 2
+        d_thresh = 2.3
         Distance_goal = Distance_compute(final_goal_location,robot_location)
-        if(Distance_goal<1):
-            d_thresh = 0.5
         # print('Goal Distance -',Distance_compute(final_goal_location,robot_location))
         # print('Goal Angle -',Heading_angle(final_goal_location,robot_location))
         left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
 
-        n_lines = 1
+        n_lines = 50
         if(np.mean(laser_ranges)<3):
             sorted_lines,line_list = get_sorted_lines(laser_ranges, n_lines)
-
-
-        # print(isRobot_goal_line(robot_location))
+        # print('Lines - ',len(line_list)/2)
+        lines_publisher(line_list)
+        goal_line_publisher([final_goal_location,robot_start_location])
+        goal_location_marker(final_goal_location)
         ################ Bug2 Algorithm Start ########################
-        
-            # if(right<d_thresh or front < d_thresh or left<d_thresh):
-            
         if(Distance_goal > 0.5):
             if(np.mean(laser_ranges)<d_thresh):
-                # if(len(sorted_lines)>0):
-                #     print('Wall Follow')
-                #     # wall_follow(sorted_lines,laser_ranges)
-                if(left<d_thresh):
+                if(np.mean(laser_ranges)<d_thresh):
                     print('Wall Follow')
                     wall_follow2(laser_ranges)
                 else:
@@ -516,10 +517,7 @@ if __name__ == '__main__':
 
 
 
-        # print('Lines - ',len(line_list)/2)
-        lines_publisher(line_list)
-        goal_line_publisher([final_goal_location,robot_start_location])
-        goal_location_marker(final_goal_location)
+
         
         
 
