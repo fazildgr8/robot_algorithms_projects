@@ -61,9 +61,9 @@ def obstacle_avoider(laser_ranges):
     right = np.mean(laser_ranges[0:60]) # Mean range of right 120 values
     vel_0 = rospy.Publisher('/cmd_vel', geometry_msgs.msg.Twist,queue_size=1) # Publish Command to robot_0
     cmd = geometry_msgs.msg.Twist()
-    k_a = 1.5 # Obstacle avoidance turn factor
+    k_a = 0.6 # Obstacle avoidance turn factor
     tolerence = 2
-    v_max = 2
+    v_max = 1
 
     linear = v_max
     angular = 0
@@ -83,7 +83,7 @@ def obstacle_avoider(laser_ranges):
 
     def uturn():
         begin=rospy.Time.now()
-        angular = random.choice([3.14,-3.14]) # 180 degrees in 0.5 seconds
+        angular = random.choice([1.57,-1.57]) # 180 degrees in 0.5 seconds
         linear = 0
         cmd.angular.z = angular
         cmd.linear.x = linear
@@ -202,10 +202,10 @@ def distance(line_points,point):
 def ransac_lines(laser_ranges):
     points_list = laser_to_points(laser_ranges)
     line_list = []
-    k = 50 # iterations 
-    d_thresh = 0.1 # Distance threshold
-    min_inliers = 40
-    while(len(points_list)>2):
+    k = 500 # iterations 
+    d_thresh = 0.2 # Distance threshold
+    min_inliers = 5
+    while(len(points_list)>10):
         max_inliers = 0
         t = 0
         max_p1 = []
@@ -253,7 +253,7 @@ if __name__ == '__main__':
             line_list = ransac_lines(laser_ranges)
             print('No. Lines Detected -',len(line_list)/2)
             lines_publisher(line_list)
-        obstacle_avoider(laser_ranges)
+        # obstacle_avoider(laser_ranges)
 
 
 

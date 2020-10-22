@@ -147,7 +147,7 @@ def lines_publisher(points_list):
     marker_data.action = marker_data.ADD
     marker_data.header.frame_id = '/odom'
 
-    marker_data.scale.x = 0.02 # width
+    marker_data.scale.x = 0.09 # width
 
 
     marker_data.pose.position.x = robot_location[0]
@@ -226,7 +226,7 @@ def orthoProjection(p1, p2, p3):
     py = ay + t * aby
     return [px, py, 0]
 
-def ransac_lines(points_list):
+def ransac_lines_temp(points_list):
     all_line_points = []
     all_line_points_pair = []
     k = 50 # iterations 
@@ -264,6 +264,44 @@ def ransac_lines(points_list):
 
     # return max_line, all_line_points
     return all_line_points_pair, score_list
+
+def ransac_lines(laser_ranges):
+    points_list = laser_to_points(laser_ranges)
+    line_list = []
+    k = 50 # iterations 
+    d_thresh = 0.01 # Distance threshold
+    min_inliers = 5
+    while(len(points_list)>10):
+        max_inliers = 0
+        t = 0
+        max_p1 = []
+        max_p2 = []
+        max_outliers = []
+        while t < k:
+            inlier_points = []
+            outlier_points = []
+            p1 = random.choice(points_list)
+            p2 = random.choice(points_list)
+            for point in points_list:
+                if(point!=p1 and point!=p2):
+                    d = distance((p1,p2),point)
+                    if d<d_thresh:
+                        inlier_points.append(point)
+                    else:
+                        outlier_points.append(point)
+                t = t+1
+                if(len(inlier_points)>min_inliers):
+                    if(len(inlier_points)>max_inliers):
+                        max_inliers = len(inlier_points)
+                        max_p1 = p1
+                        max_p2 = p2
+                        max_outliers = outlier_points
+        line_list.append(max_p1)
+        line_list.append(max_p2)
+        points_list = max_outliers
+    line_list = [x for x in line_list if x != []]
+
+    return line_list
 
 def get_sorted_lines(laser_ranges, n_lines):
     line_list = []
@@ -305,29 +343,28 @@ def wall_follow2(laser_ranges):
     global Distance_goal, final_goal_location
     left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
     d_arr = np.array([left,slight_left, front, right,slight_right])
-    d_thresh = 2.5
+    d_thresh = 2
     k = 4
     slack = 0.8 #1.2
-    print('Wall Distance -', d_thresh-np.min(d_arr))
-    # t = abs(d_thresh-np.min(d_arr))*k
     t = math.atan(d_thresh/front) - math.atan(np.min(d_arr)/front)
 
     if(Distance_goal<1.8):
         go_to_goal(final_goal_location)
+    elif(left > d_thresh and slight_left < d_thresh and right < left):
+        t = abs(t)*k
+        move(0.5,1.5*t)
+        print('Wall Follow - Turn Left')
+    elif(left<d_thresh and front < d_thresh and right > left):
+        t = abs(t)*k
+        move(0.5,-1.5*t)
+        print('Wall Follow - Turn Right')
+
     elif(left<d_thresh and front >= d_thresh):
         begin=rospy.Time.now()
         while((rospy.Time.now()-begin) < rospy.Duration(slack)):       
             move(1,-0.1)
-            print('Wall - Go Straight')
+            print('Wall Follow - Go Straight')
 
-    elif(left > d_thresh and slight_left < d_thresh and right < left):
-        t = abs(t)*k
-        move(0.5,t)
-        print('Wal - Turn Left')
-    elif(left<d_thresh and front < d_thresh and right > left):
-        t = abs(t)*k
-        move(0.5,-1.5*t)
-        print('Wall - Turn Right')
     elif(slight_left < 0.8 and left > d_thresh):
         move(0.5,-1.2)
     elif(slight_right < d_thresh or slight_left < d_thresh or front < d_thresh):
@@ -482,17 +519,15 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
 
         line_list = []
-        sorted_lines = []
         d_thresh = 2.3
         Distance_goal = Distance_compute(final_goal_location,robot_location)
         # print('Goal Distance -',Distance_compute(final_goal_location,robot_location))
         # print('Goal Angle -',Heading_angle(final_goal_location,robot_location))
         left,slight_left, front, right,slight_right = laser_range_direction(laser_ranges)
-
-        n_lines = 10
         if(np.mean(laser_ranges)<3):
-            sorted_lines,line_list = get_sorted_lines(laser_ranges, n_lines)
-        # print('Lines - ',len(line_list)/2)
+            line_list = ransac_lines(laser_ranges)
+            lines_publisher(line_list)
+
         lines_publisher(line_list)
         goal_line_publisher([final_goal_location,robot_start_location])
         goal_location_marker(final_goal_location)
@@ -502,9 +537,6 @@ if __name__ == '__main__':
                 if(np.mean(laser_ranges)<d_thresh):
                     print('Wall Follow')
                     wall_follow2(laser_ranges)
-                else:
-                    print('Go to Goal')
-                    go_to_goal(final_goal_location)
             else:
                 if(isRobot_goal_line(robot_location)==False):
                     print('Go to Course Line')
