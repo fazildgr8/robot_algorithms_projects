@@ -176,7 +176,7 @@ def goal_line_publisher(points_list):
     marker_data.action = marker_data.ADD
     marker_data.header.frame_id = '/odom'
 
-    marker_data.scale.x = 0.3 # width
+    marker_data.scale.x = 0.1 # width
 
 
     # marker_data.pose.position.x = robot_location[0]
@@ -307,7 +307,7 @@ def wall_follow2(laser_ranges):
     d_arr = np.array([left,slight_left, front, right,slight_right])
     d_thresh = 2.5
     k = 4
-    slack = 1.2
+    slack = 0.8 #1.2
     print('Wall Distance -', d_thresh-np.min(d_arr))
     # t = abs(d_thresh-np.min(d_arr))*k
     t = math.atan(d_thresh/front) - math.atan(np.min(d_arr)/front)
@@ -317,7 +317,7 @@ def wall_follow2(laser_ranges):
     elif(left<d_thresh and front >= d_thresh):
         begin=rospy.Time.now()
         while((rospy.Time.now()-begin) < rospy.Duration(slack)):       
-            move(0.5,-0.1)
+            move(1,-0.1)
             print('Wall - Go Straight')
 
     elif(left > d_thresh and slight_left < d_thresh and right < left):
@@ -347,7 +347,7 @@ def isRobot_goal_line(robot_location):
     # y = mx + b
     lhs = robot_start_location[1]
     rhs = m*robot_start_location[0] + b
-    e = 1
+    e = 0.5
     if(abs(lhs-rhs)<=e):
         return True
     else:

@@ -13,19 +13,11 @@ from visualization_msgs.msg import Marker
 import numpy as np
 import time
 global laser_ranges, robot_location, robot_rotation, laser_intensities
-laser_ranges = np.zeros((361,))
+laser_ranges = 3*np.ones((361,))
 laser_intensities = np.zeros((361,))
 robot_location = [0,0,0]
 robot_rotation = [0,0,0,0]
 
-# Broadcast to /odom to a world frame
-def tf_broadcaster(msg, robot_name):
-    br = tf.TransformBroadcaster()
-    br.sendTransform((msg.pose.pose.position.x, msg.pose.pose.position.y, 0),
-                     tf.transformations.quaternion_from_euler(0, 0,msg.pose.pose.orientation.z),
-                     rospy.Time.now(),
-                     robot_name,
-                     "world")  
 
 def callback_laser(msg):
     global laser_ranges, laser_intensities
@@ -171,7 +163,7 @@ def lines_publisher(points_list):
     marker_data.action = marker_data.ADD
     marker_data.header.frame_id = '/odom'
 
-    marker_data.scale.x = 0.02 # width
+    marker_data.scale.x = 0.07 # width
 
 
     marker_data.pose.position.x = robot_location[0]
@@ -207,43 +199,43 @@ def distance(line_points,point):
     # d = np.linalg.norm(np.cross(p2-p1, p1-point))/np.linalg.norm(p2-p1)
     return d
 
-def ransac_lines(points_list):
-    all_line_points = []
-    all_line_points_pair = []
+def ransac_lines(laser_ranges):
+    points_list = laser_to_points(laser_ranges)
+    line_list = []
     k = 300 # iterations 
     d_thresh = 0.1 # Distance threshold
     min_inliers = 40
-    max_inliers = 0
-    score_list = []
-    t = 0
-    while t < k:
-        inlier_points = []
-        outlier_points = []
-        score = 0
-        p1 = random.choice(points_list)
-        p2 = random.choice(points_list)
-        for point in points_list:
-            d = distance((p1,p2),point)
-            
-            if d<d_thresh:
-                inlier_points.append(point)
-                score = score + d
-            else:
-                outlier_points.append(point)
-        t = t+1
-        score = score/len(inlier_points)
-        
-        if(len(inlier_points)>min_inliers):
-            # all_line_points.append([p1,p2])
-            all_line_points.append(p1)
-            all_line_points.append(p2)
-            all_line_points_pair.append([p1,p2])
-            score_list.append(score)
-            if(len(inlier_points)>max_inliers):
-                max_inliers = len(inlier_points)
+    while(len(points_list)>2):
+        max_inliers = 0
+        t = 0
+        max_p1 = []
+        max_p2 = []
+        max_outliers = []
+        while t < k:
+            inlier_points = []
+            outlier_points = []
+            p1 = random.choice(points_list)
+            p2 = random.choice(points_list)
+            for point in points_list:
+                if(point!=p1 and point!=p2):
+                    d = distance((p1,p2),point)
+                    if d<d_thresh:
+                        inlier_points.append(point)
+                    else:
+                        outlier_points.append(point)
+                t = t+1
+                if(len(inlier_points)>min_inliers):
+                    if(len(inlier_points)>max_inliers):
+                        max_inliers = len(inlier_points)
+                        max_p1 = p1
+                        max_p2 = p2
+                        max_outliers = outlier_points
+        line_list.append(max_p1)
+        line_list.append(max_p2)
+        points_list = max_outliers
+    line_list = [x for x in line_list if x != []]
 
-    # return max_line, all_line_points
-    return all_line_points_pair, score_list
+    return line_list
 
 
 if __name__ == '__main__':
@@ -252,25 +244,16 @@ if __name__ == '__main__':
     listener = tf.TransformListener()
     sub = rospy.Subscriber('/base_scan', LaserScan, callback_laser) # Receive Laser Msg from /stage
     sub_odom = rospy.Subscriber('/odom', Odometry, callback_odom) # Receive Laser Msg from /stage
-    robot_name = '/odom' # TF Broadcast robot
-    # rospy.Subscriber(robot_name,Odometry,tf_broadcaster,robot_name)
-    # rate = rospy.Rate(10.0)
+
 
     while not rospy.is_shutdown():
-        global robot_location, robot_rotation
-        if(np.mean(np.array(laser_ranges))<3):
-            points_list = laser_to_points(laser_ranges)
-            all_line_points_pair, score_list = ransac_lines(points_list)
-            sorted_lines = [x for _,x in sorted(zip(score_list,all_line_points_pair))] # Sort the formed lines According to the line length scores
-            line_list = []
-            n_lines = 100 # Top N lines to display
-            # sorted_lines.reverse()
-            for points in sorted_lines[0:n_lines]:
-                line_list.append(points[0])
-                line_list.append(points[1])
-            print('Lines - ',len(line_list)/2)
+        points_list = laser_to_points(laser_ranges)
+        
+        if(np.mean(laser_ranges)<3):
+            line_list = ransac_lines(laser_ranges)
+            print('No. Lines Detected -',len(line_list)/2)
             lines_publisher(line_list)
-        obstacle_avoider(laser_ranges)
+        # obstacle_avoider(laser_ranges)
 
 
 
