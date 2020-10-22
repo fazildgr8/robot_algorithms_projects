@@ -202,7 +202,7 @@ def distance(line_points,point):
 def ransac_lines(laser_ranges):
     points_list = laser_to_points(laser_ranges)
     line_list = []
-    k = 300 # iterations 
+    k = 50 # iterations 
     d_thresh = 0.1 # Distance threshold
     min_inliers = 40
     while(len(points_list)>2):
@@ -253,7 +253,7 @@ if __name__ == '__main__':
             line_list = ransac_lines(laser_ranges)
             print('No. Lines Detected -',len(line_list)/2)
             lines_publisher(line_list)
-        # obstacle_avoider(laser_ranges)
+        obstacle_avoider(laser_ranges)
 
 
 
