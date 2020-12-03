@@ -7,5 +7,5 @@
 # new environment variables
 
 # modified environment variables
-export PATH='/opt/ros/melodic/bin:/home/fazildgr8/anaconda3/bin:/usr/local/cuda-10.1/bin:/home/fazildgr8/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'
+export PATH='/opt/ros/melodic/bin:/home/fazildgr8/anaconda3/bin:/home/fazildgr8/anaconda3/condabin:/usr/local/cuda-10.1/bin:/home/fazildgr8/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'
 export PWD='/home/fazildgr8/catkin_ws/build'

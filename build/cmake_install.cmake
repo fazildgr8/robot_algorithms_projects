@@ -133,6 +133,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("/home/fazildgr8/catkin_ws/build/gtest/cmake_install.cmake")
   include("/home/fazildgr8/catkin_ws/build/lab1/cmake_install.cmake")
   include("/home/fazildgr8/catkin_ws/build/lab2/cmake_install.cmake")
+  include("/home/fazildgr8/catkin_ws/build/lab4/cmake_install.cmake")
   include("/home/fazildgr8/catkin_ws/build/ros_basics_tutorials/cmake_install.cmake")
 
 endif()

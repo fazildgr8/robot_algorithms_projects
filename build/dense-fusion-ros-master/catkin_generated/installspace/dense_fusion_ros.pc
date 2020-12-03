@@ -1,0 +1,8 @@
+prefix=/home/fazildgr8/catkin_ws/install
+
+Name: dense_fusion_ros
+Description: Description of dense_fusion_ros
+Version: 0.0.1
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -17,6 +17,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "lab1/catkin_generated/package.cmake"
   "lab2/catkin_generated/ordered_paths.cmake"
   "lab2/catkin_generated/package.cmake"
+  "lab4/catkin_generated/ordered_paths.cmake"
+  "lab4/catkin_generated/package.cmake"
   "ros_basics_tutorials/catkin_generated/ordered_paths.cmake"
   "ros_basics_tutorials/catkin_generated/package.cmake"
   "/home/fazildgr8/catkin_ws/src/CMakeLists.txt"
@@ -24,6 +26,8 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/fazildgr8/catkin_ws/src/lab1/package.xml"
   "/home/fazildgr8/catkin_ws/src/lab2/CMakeLists.txt"
   "/home/fazildgr8/catkin_ws/src/lab2/package.xml"
+  "/home/fazildgr8/catkin_ws/src/lab4/CMakeLists.txt"
+  "/home/fazildgr8/catkin_ws/src/lab4/package.xml"
   "/home/fazildgr8/catkin_ws/src/ros_basics_tutorials/CMakeLists.txt"
   "/home/fazildgr8/catkin_ws/src/ros_basics_tutorials/package.xml"
   "/opt/ros/melodic/share/catkin/cmake/../package.xml"
@@ -184,6 +188,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "gtest/googlemock/gtest/CMakeFiles/CMakeDirectoryInformation.cmake"
   "lab1/CMakeFiles/CMakeDirectoryInformation.cmake"
   "lab2/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "lab4/CMakeFiles/CMakeDirectoryInformation.cmake"
   "ros_basics_tutorials/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 

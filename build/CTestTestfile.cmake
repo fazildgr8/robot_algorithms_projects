@@ -7,4 +7,5 @@
 subdirs("gtest")
 subdirs("lab1")
 subdirs("lab2")
+subdirs("lab4")
 subdirs("ros_basics_tutorials")

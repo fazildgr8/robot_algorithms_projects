@@ -64,6 +64,13 @@
 /home/fazildgr8/catkin_ws/build/lab2/CMakeFiles/install/local.dir
 /home/fazildgr8/catkin_ws/build/lab2/CMakeFiles/rebuild_cache.dir
 /home/fazildgr8/catkin_ws/build/lab2/CMakeFiles/install.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/install/strip.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/edit_cache.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/list_install_components.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/test.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/install/local.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/rebuild_cache.dir
+/home/fazildgr8/catkin_ws/build/lab4/CMakeFiles/install.dir
 /home/fazildgr8/catkin_ws/build/ros_basics_tutorials/CMakeFiles/install/strip.dir
 /home/fazildgr8/catkin_ws/build/ros_basics_tutorials/CMakeFiles/edit_cache.dir
 /home/fazildgr8/catkin_ws/build/ros_basics_tutorials/CMakeFiles/list_install_components.dir

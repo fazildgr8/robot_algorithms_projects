@@ -935,6 +935,24 @@ lab2/preinstall:
 .PHONY : lab2/preinstall
 
 #=============================================================================
+# Directory level rules for directory lab4
+
+# Convenience name for "all" pass in the directory.
+lab4/all:
+
+.PHONY : lab4/all
+
+# Convenience name for "clean" pass in the directory.
+lab4/clean:
+
+.PHONY : lab4/clean
+
+# Convenience name for "preinstall" pass in the directory.
+lab4/preinstall:
+
+.PHONY : lab4/preinstall
+
+#=============================================================================
 # Directory level rules for directory ros_basics_tutorials
 
 # Convenience name for "all" pass in the directory.

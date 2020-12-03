@@ -1,2 +1,2 @@
-lab1:lab2:ros_basics_tutorials
+lab1:lab2:lab4:ros_basics_tutorials
 -DCATKIN_DEVEL_PREFIX=/home/fazildgr8/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/home/fazildgr8/catkin_ws/install -G Unix Makefiles
