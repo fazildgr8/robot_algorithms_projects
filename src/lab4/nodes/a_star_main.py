@@ -64,8 +64,8 @@ robot_location = robot_start_location
 robot_rotation = [0,0,0]
 goal_reached = False
 iter_break = False
-rospy.set_param('goalx', -8)
-rospy.set_param('goaly', 8)
+# rospy.set_param('goalx', -8)
+# rospy.set_param('goaly', 8)
 
 # rospy.set_param('goalx', 3)
 # rospy.set_param('goaly', -9)
