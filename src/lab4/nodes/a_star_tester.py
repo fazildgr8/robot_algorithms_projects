@@ -153,7 +153,6 @@ def OccupancyGrid_publish(global_map):
     grid_publisher.publish(map_msg)
 
 def points_publisher(points_list):
-    global robot_location, robot_rotation, robot_orientation
     marker_pub = rospy.Publisher('path_points', Marker,queue_size=1) # Publish Robot Position to RVIZ
     marker_data = Marker()
     marker_data.type = marker_data.POINTS
