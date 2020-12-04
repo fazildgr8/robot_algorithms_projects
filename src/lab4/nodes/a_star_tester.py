@@ -32,7 +32,7 @@ class Node:
         return self.location == node.location
 
 ################### Global Variables ####################################
-global robot_location, robot_rotation, final_goal_location, robot_start_location, global_map, final_path, map_odom_trans
+global robot_location, robot_rotation, final_goal_location, robot_start_location, global_map, final_path, map_odom_trans, goal_reached
 
 global_map = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,0, 0],
@@ -61,7 +61,7 @@ laser_ranges = np.zeros((361,))
 laser_intensities = np.zeros((361,))
 robot_start_location = [-8,-2,0]
 robot_location = [-8,-2,0]
-
+goal_reached = False
 robot_rotation = [0,0,1.57]
 robot_orientation = quaternion_from_euler(robot_rotation[0],robot_rotation[1],robot_rotation[2])
 
@@ -200,7 +200,7 @@ def A_STAR(global_map, start, end, Type = '8c',e = 1, heuristic = 'eu' ):
             while node is not None:
                 path.append(node.location)
                 node = node.prev
-            print('--->',path[::-1])
+            # print('--->',path[::-1])
             return path[::-1]
 
 
@@ -216,12 +216,12 @@ def A_STAR(global_map, start, end, Type = '8c',e = 1, heuristic = 'eu' ):
 
             node_pos = [current_node.location[0]+i_list[k],current_node.location[1]+j_list[k]]
             if (node_pos[1] >   global_map.shape[0]-1 or node_pos[1] < 0 or node_pos[0] > global_map.shape[1]-1 or node_pos[0] < 0):
-               continue
-            # if (node_pos[0] > (len(global_map) - 1) or node_pos[0] < 0 or
-            #    (node_pos[1] > len(global_map[node_pos[0]]) - 1) or node_pos[1] < 0):
-            #    continue
+                print('[Error] End Locations out of Bound')
+                continue
+
 
             if global_map[node_pos[1]][node_pos[0]] != 0:
+                print('[Error] End Locations is Occupied')
                 continue
 
             neibhour_node = Node((node_pos[0], node_pos[1]))
@@ -267,6 +267,72 @@ def rot2d(v,t):
     yr = x*sin(t)+y*cos(t)
     return [xr,yr]
 
+################### Motion Controll ########################
+
+def Heading_angle(goal_loc,Current_loc):
+    return math.atan2(goal_loc[1]-Current_loc[1],goal_loc[0]-Current_loc[0])
+
+def vel_compute(robot_location,robot_rotation,goal_loc):
+    trans = robot_location 
+    rot = robot_rotation 
+    global Distance_goal, heading_theta
+    # Propotional Controller
+    # Parameters
+    d_tolerence = 0.01
+    v_max  = 2
+    kl = 1 # Linear V tune
+    ka = 4 # Angular V tune
+
+    theta = rot[2]
+    v_x = 0
+    theta_d = 0
+    v_theta = 0
+    err_theta = 0
+    d = Distance_compute(goal_loc,trans)  # Distance
+
+    theta_d = Heading_angle(goal_loc,trans)
+    heading_theta = theta_d
+    err_theta = theta_d-theta
+    if(d>d_tolerence):
+        # Linear Velocity
+        v_x = kl*d
+        if(v_x>v_max):
+            v_x = v_max
+        # Angular Velocity
+        v_theta = ka*err_theta
+    # print('v_x - ',v_x,' v_theta - ',v_theta,'Distance -',distance,' error -',err_theta)
+    # print('Current Heading-',math.degrees(theta),'Goal Heeading -',math.degrees(theta_d))
+    # print('Current - ',trans,'Goal -',goal_loc )
+    # print('\n')
+    return v_x,v_theta # linear velocity Angular Velocity
+
+def move(linear,angular):
+    vel_1 = rospy.Publisher('/cmd_vel', geometry_msgs.msg.Twist,queue_size=10) # Publish Command to robot_1
+    cmd = geometry_msgs.msg.Twist()
+    cmd.linear.x = linear
+    cmd.angular.z = angular 
+    vel_1.publish(cmd)
+
+def go_to_goal(final_goal_location):
+    global robot_location, robot_rotation
+    linear,angular = vel_compute(robot_location,robot_rotation,final_goal_location)
+    move(linear,angular)
+
+def Follow_path(path):
+    global global_map,final_goal_location, goal_reached
+    cpath = path
+    goal_point = cpath[-1]
+    print('Following Path -->',cpath)
+    for loc in cpath:
+        while(Distance_compute(robot_location,loc)>0.1):
+            OccupancyGrid_publish(global_map[::-1])
+            goal_location_marker(final_goal_location)
+            points_publisher(cpath)
+            go_to_goal(loc)
+            if(loc==goal_point):
+                goal_reached = True
+            
+
 if __name__ == '__main__':
     rospy.init_node('A_STAR')
     rate = rospy.Rate(10.0)
@@ -280,7 +346,9 @@ if __name__ == '__main__':
     heuristic = 'eu'
     heuristic_factor = 10
     final_path = A_STAR(global_map[::-1],start,end,neibhour_type,heuristic_factor,heuristic)
-    
+    path_odom_frame = convert_path(final_path,[-9,-10],0)
+    goal_reached = False
+    t_robot_loc = robot_location
     while not rospy.is_shutdown():
 
         if(final_goal_location != [rospy.get_param('/goalx'), rospy.get_param('/goaly'), 0]):
@@ -288,11 +356,15 @@ if __name__ == '__main__':
             start = (int(robot_location[0]+9),int(robot_location[1]+10))
             end = (int(final_goal_location[0]+9), int(final_goal_location[1]+10))
             print('Start-',start,' End-',end)
+            goal_reached = False
             final_path = A_STAR(global_map[::-1],start,end,neibhour_type,heuristic_factor,heuristic)
+            path_odom_frame = convert_path(final_path,[-9,-10],0)
 
         OccupancyGrid_publish(global_map[::-1])
-        points_publisher(convert_path(final_path,[-9,-10],0))
+        points_publisher(path_odom_frame)
         goal_location_marker(final_goal_location)
+        if(goal_reached==False):
+            Follow_path(path_odom_frame)
 
 
 
