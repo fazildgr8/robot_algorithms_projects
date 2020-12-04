@@ -47,7 +47,7 @@ global_map = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0,0, 0],
                        [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,1, 1],
                        [0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,1, 0],
                        [0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,0, 0],
-                       [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,0, 0],
+                       [0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1,1, 0],
                        [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,0, 0],
@@ -65,11 +65,15 @@ goal_reached = False
 robot_rotation = [0,0,1.57]
 robot_orientation = quaternion_from_euler(robot_rotation[0],robot_rotation[1],robot_rotation[2])
 
-Distance_goal = 10**5
-heading_theta = 0
+# rospy.set_param('goalx', 2)
+# rospy.set_param('goaly', -9)
 
-rospy.set_param('goalx', 4.5)
-rospy.set_param('goaly', 9)
+rospy.set_param('goalx', -8)
+rospy.set_param('goaly', 8)
+
+# rospy.set_param('goalx', 4.5)
+# rospy.set_param('goaly', 9)
+
 final_goal_location = [rospy.get_param('/goalx'), rospy.get_param('/goaly'), 0]
 ##################### Perception Part #####################
 
@@ -171,6 +175,51 @@ def points_publisher(points_list):
         marker_data.points.append(Point(p[0],p[1],0))
     marker_pub.publish(marker_data)
 
+def points_publisher_astar_open(nodes_list):
+    points_list = []
+    for node in nodes_list:
+        points_list.append(node.location)
+    marker_pub = rospy.Publisher('astar_points', Marker,queue_size=1) # Publish Robot Position to RVIZ
+    marker_data = Marker()
+    marker_data.type = marker_data.POINTS
+    marker_data.action = marker_data.ADD
+    marker_data.header.frame_id = '/odom'
+
+    marker_data.scale.x = 1 # width
+    marker_data.scale.y = 1 # Height
+
+    marker_data.color.a = 0.5
+    marker_data.color.r = 0
+    marker_data.color.g = 1
+    marker_data.color.b = 1
+
+    for p in points_list:
+        marker_data.points.append(Point(p[0],p[1],0))
+    marker_pub.publish(marker_data)
+
+def points_publisher_astar_closed(nodes_list):
+    points_list = []
+    for node in nodes_list:
+        points_list.append(node.location)
+    points_list = convert_path(points_list,[-9,-10],0)
+    marker_pub = rospy.Publisher('astar_points', Marker,queue_size=1) # Publish Robot Position to RVIZ
+    marker_data = Marker()
+    marker_data.type = marker_data.POINTS
+    marker_data.action = marker_data.ADD
+    marker_data.header.frame_id = '/odom'
+
+    marker_data.scale.x = 1 # width
+    marker_data.scale.y = 1 # Height
+
+    marker_data.color.a = 0.5
+    marker_data.color.r = 1
+    marker_data.color.g = 0
+    marker_data.color.b = 1
+
+    for p in points_list:
+        marker_data.points.append(Point(p[0],p[1],0))
+    marker_pub.publish(marker_data)
+
 #################### Planning Part #########################
 
 def A_STAR(global_map, start, end, Type = '8c',e = 1, heuristic = 'eu' ):
@@ -184,6 +233,8 @@ def A_STAR(global_map, start, end, Type = '8c',e = 1, heuristic = 'eu' ):
     closed_nodes = []
 
     while open_list:
+        points_publisher_astar_open(open_list)
+        points_publisher_astar_closed(closed_nodes)
         current_node = open_list[0]
         index = 0
         for i, x in enumerate(open_list):
