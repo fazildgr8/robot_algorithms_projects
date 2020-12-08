@@ -70,7 +70,7 @@ floorplan
 )
 
 # throw in a robot
-turtlebot( pose [ -8.0 -2.0 0 90.000 ] name "evader" color "blue")
+turtlebot( pose [ -8.0 -2.0 0 0.000 ] name "evader" color "blue")
 
 
 

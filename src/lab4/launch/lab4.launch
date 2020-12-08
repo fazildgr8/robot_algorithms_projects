@@ -1,6 +1,6 @@
   <launch>
   <param name="goalx" type="double" value="4.5" />
-  <param name="goaly" type="double" value="9.0" />
+  <param name="goaly" type="double" value="9" />
 
 	<node name="stage" pkg="stage_ros" type="stageros"
 	      args="$(find lab4)/world/playground.world" />
