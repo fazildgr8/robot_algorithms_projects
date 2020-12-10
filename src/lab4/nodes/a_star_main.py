@@ -133,7 +133,6 @@ def callback_odom(msg):
     robot_orientation = orientation
     robot_cube_publisher(location,robot_orientation)
     map_g = np.copy(global_map)
-    map_g[13][8] = 0
     OccupancyGrid_publish(map_g[::-1]) # Publish the Occupancy Grid
     goal_location_marker(final_goal_location) # Publish Goal 
 
@@ -306,14 +305,50 @@ def A_STAR(global_map, start, end, Type = '8c',e = 1, heuristic = 'eu' ):
         for neibhour in neibhours:
             if neibhour in closed_nodes:
                 continue
+            
+            # Avoid Locations Cornering with obstacles  
+            comb_nw = [(-1,0),(-1,1),(0,1)]
+            comb_ne = [(1,1),(1,0),(0,1)]
+            comb_sw = [(-1,0),(-1,-1),(0,-1)]
+            comb_se = [(1,-1),(1,0),(0,-1)]
+            n_fac = 0
+            nw_flag = True
+            ne_flag = True
+            sw_flag = True
+            se_flag = True
+            try:
+                for xp,yp in comb_nw:
+                    if(global_map[neibhour.location[1]+yp][neibhour.location[0]+xp]!=1):
+                        nw_flag = False
+                
+                for xp,yp in comb_ne:
+                    if(global_map[neibhour.location[1]+yp][neibhour.location[0]+xp]!=1):
+                        ne_flag = False
+                for xp,yp in comb_se:
+                    if(global_map[neibhour.location[1]+yp][neibhour.location[0]+xp]!=1):
+                        se_flag = False
+                for xp,yp in comb_sw:
+                    if(global_map[neibhour.location[1]+yp][neibhour.location[0]+xp]!=1):
+                        sw_flag = False
+                if(nw_flag == True):
+                    n_fac = n_fac+3
+                if(ne_flag == True):
+                    n_fac = n_fac+3
+                if(se_flag == True):
+                    n_fac = n_fac+3
+                if(sw_flag == True):
+                    n_fac = n_fac+3
+            except IndexError:
+                pass
+
             # Update Costs of the Neibhour Nodes
-            g = Distance_compute(neibhour.location,start_node.location,heuristic)
+            g = neibhour.g_cost + 1 + (n_fac**2)*10
+            # g = Distance_compute(neibhour.location,start_node.location,heuristic)+n_fac
             h = Distance_compute(neibhour.location,end_node.location,heuristic)
             neibhour.update_cost(g,h*e)
             for onode in open_list:
                 if neibhour == onode and neibhour.g_cost > onode.g_cost:
                     continue
-
             open_list.append(neibhour)
     
 def convert_path(path,trans,t):
@@ -406,12 +441,12 @@ if __name__ == '__main__':
     start = (int(robot_location[0]+9),int(robot_location[1]+10))
     final_goal_location = [rospy.get_param('/goalx'), rospy.get_param('/goaly'), 0]
     end = (int(final_goal_location[0]+9), int(final_goal_location[1]+10))
-    global_map[13][8] = 1 
+    # global_map[13][8] = 1 
 
     # A star factors
     neibhour_type = '8c'
     heuristic = 'eu'
-    heuristic_factor = 10
+    heuristic_factor = 2
     
     # Get the Path in Map coordinates
     final_path = A_STAR(global_map[::-1],start,end,neibhour_type,heuristic_factor,heuristic)
